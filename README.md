@@ -1,6 +1,6 @@
 # KSC.Observability
 
-پروژه محلی برای راه‌اندازی **Observability Stack** مبتنی بر OpenTelemetry و Prometheus، احتمالاً برای مانیتورینگ **Kaspersky Security Center (KSC)**.
+پروژه محلی برای راه‌اندازی **Observability Stack** مبتنی بر OpenTelemetry و Prometheus، احتمالاً برای مانیتورینگ **KSC.ERP (KSC)**.
 
 این پروژه شامل ابزارهای لازم برای جمع‌آوری، پردازش و نمایش متریک‌های سیستم (به ویژه متریک‌های صادرشده توسط KSC روی پورت Prometheus) است و امکان مانیتورینگ پیشرفته را فراهم می‌کند.
 
@@ -17,4 +17,4 @@
   - `prometheus.exe`
   - `promtool.exe` (اختیاری)
 
-## ساختار پروژه
+
