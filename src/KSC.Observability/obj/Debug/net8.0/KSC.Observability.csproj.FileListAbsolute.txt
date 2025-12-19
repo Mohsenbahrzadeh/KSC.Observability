@@ -1,0 +1,13 @@
+I:\Projects\KSC.Observability\src\KSC.Observability\bin\Debug\net8.0\KSC.Observability.deps.json
+I:\Projects\KSC.Observability\src\KSC.Observability\bin\Debug\net8.0\KSC.Observability.dll
+I:\Projects\KSC.Observability\src\KSC.Observability\bin\Debug\net8.0\KSC.Observability.pdb
+I:\Projects\KSC.Observability\src\KSC.Observability\obj\Debug\net8.0\KSC.Observability.csproj.AssemblyReference.cache
+I:\Projects\KSC.Observability\src\KSC.Observability\obj\Debug\net8.0\KSC.Observability.GeneratedMSBuildEditorConfig.editorconfig
+I:\Projects\KSC.Observability\src\KSC.Observability\obj\Debug\net8.0\KSC.Observability.AssemblyInfoInputs.cache
+I:\Projects\KSC.Observability\src\KSC.Observability\obj\Debug\net8.0\KSC.Observability.AssemblyInfo.cs
+I:\Projects\KSC.Observability\src\KSC.Observability\obj\Debug\net8.0\KSC.Observability.csproj.CoreCompileInputs.cache
+I:\Projects\KSC.Observability\src\KSC.Observability\obj\Debug\net8.0\KSC.Observability.sourcelink.json
+I:\Projects\KSC.Observability\src\KSC.Observability\obj\Debug\net8.0\KSC.Observability.dll
+I:\Projects\KSC.Observability\src\KSC.Observability\obj\Debug\net8.0\refint\KSC.Observability.dll
+I:\Projects\KSC.Observability\src\KSC.Observability\obj\Debug\net8.0\KSC.Observability.pdb
+I:\Projects\KSC.Observability\src\KSC.Observability\obj\Debug\net8.0\ref\KSC.Observability.dll

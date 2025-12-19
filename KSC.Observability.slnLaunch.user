@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "test\\KSC.Observability.Api\\KSC.Observability.Api.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "test\\KSC.Observability.Web\\KSC.Observability.Web.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]
