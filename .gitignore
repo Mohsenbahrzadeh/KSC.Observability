@@ -49,3 +49,6 @@ Thumbs.db
 # Claude Code local settings
 .claude/settings.local.json
 .claude/*.local.json
+
+# Local run state (pids, logs) from up.ps1 / down.ps1
+.run/

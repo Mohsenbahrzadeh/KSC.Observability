@@ -23,6 +23,32 @@ Prometheus scrapes that endpoint; Grafana turns it into dashboards and alerts.
 
 ---
 
+## One-command demo
+
+With **Docker running**, from the repo root:
+
+```powershell
+.\up.cmd
+```
+
+This builds the demo app, starts Prometheus + Grafana, runs a sample app that emits live
+metrics, waits until everything is healthy, and opens the Grafana dashboard. Stop it with:
+
+```powershell
+.\down.cmd
+```
+
+| What | URL |
+|------|-----|
+| Grafana dashboard | http://localhost:3000/d/ksc-observability-overview (admin / admin) |
+| Prometheus targets | http://localhost:9090/targets |
+| Demo app / metrics | http://localhost:9184/ · http://localhost:9184/metrics |
+
+> Real environments: run `.\up.cmd -NoDemo` to start only the monitoring stack, then point
+> Prometheus at your own IIS apps (see [`deploy/`](deploy/)).
+
+---
+
 ## شروع سریع (فارسی)
 
 ۱. پکیج را در اپ ASP.NET خود نصب کنید:
