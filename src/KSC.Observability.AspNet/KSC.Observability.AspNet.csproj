@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <RootNamespace>KSC.Observability.AspNet</RootNamespace>
+    <AssemblyName>KSC.Observability.AspNet</AssemblyName>
+
+    <IsPackable>true</IsPackable>
+    <PackageId>KSC.Observability.AspNet</PackageId>
+    <Title>KSC.Observability for ASP.NET (System.Web)</Title>
+    <Description>Drop-in Prometheus metrics for classic ASP.NET (Web Forms / MVC) applications on .NET Framework. Installs an HttpModule that exposes a /metrics endpoint and tracks requests, active users and process resources. This is the package you install in your app.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\KSC.Observability.Abstractions\KSC.Observability.Abstractions.csproj" />
+    <ProjectReference Include="..\KSC.Observability.Metrics\KSC.Observability.Metrics.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.Infrastructure" Version="2.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Web" />
+    <Reference Include="System.Configuration" />
+  </ItemGroup>
+
+</Project>
