@@ -1,0 +1,30 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: ksc-observability
+
+scrape_configs:
+  # Scrape every KSC.Observability-instrumented .NET app here.
+  - job_name: ksc-dotnet-apps
+    metrics_path: /metrics
+    static_configs:
+      # Replace these with the host:port of each application's /metrics endpoint.
+      # host.docker.internal points back at the Docker host (apps running on IIS/Windows).
+      - targets:
+          - host.docker.internal:8080
+        labels:
+          team: platform
+      # - targets: ['app-server-01:80', 'app-server-02:80']
+      #   labels: { team: billing }
+
+    # If you protected /metrics with ObservabilityOptions.MetricsAccessToken, uncomment:
+    # authorization:
+    #   type: Bearer
+    #   credentials: "your-secret-token"
+
+  # Prometheus scraping itself (handy for stack health).
+  - job_name: prometheus
+    static_configs:
+      - targets:
+          - localhost:9090
