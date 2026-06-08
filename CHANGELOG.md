@@ -6,6 +6,22 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-08
+
+### Added
+- **ASP.NET Core (.NET 8+) support** via the new `KSC.Observability.AspNetCore` package:
+  `AddKscObservability()` + `UseKscObservability()` (and `MapKscMetrics()`), with a middleware
+  that records request metrics, tracks active users and serves `/metrics`. Options bind from the
+  `KSC.Observability` configuration section (appsettings.json / environment).
+- `samples/KSC.Sample.WebApi`: a minimal API sample for .NET 8.
+
+### Changed
+- `KSC.Observability.Metrics` now multi-targets `net472;net8.0` so the same metric core powers
+  both .NET Framework and modern .NET apps.
+
+### Notes
+- .NET Framework apps keep using `KSC.Observability.AspNet` (unchanged).
+
 ## [0.1.0] - 2026-06-08
 
 ### Added
@@ -21,5 +37,6 @@ All notable changes to this project are documented here. The format is based on
 - Sample ASP.NET Web Forms app under `samples/`.
 - GitHub Actions CI (build, test, pack) on Windows.
 
-[Unreleased]: https://github.com/Mohsenbahrzadeh/KSC.Observability/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Mohsenbahrzadeh/KSC.Observability/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/Mohsenbahrzadeh/KSC.Observability/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Mohsenbahrzadeh/KSC.Observability/releases/tag/v0.1.0
