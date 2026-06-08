@@ -30,6 +30,26 @@
     <RepositoryUrl>https://github.com/KSC/KSC.Observability</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>observability;metrics;prometheus;monitoring;dotnet-framework;aspnet</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+
+    <!-- Ship debug symbols and Source Link so consumers can step into the library. -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+
+    <!-- Drop all packages into a single artifacts folder at the repo root. -->
+    <PackageOutputPath>$(MSBuildThisFileDirectory)artifacts</PackageOutputPath>
   </PropertyGroup>
+
+  <!-- Bundle the repo README into every package that is published. -->
+  <ItemGroup Condition="'$(IsPackable)' == 'true'">
+    <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+
+  <!-- Source Link maps PDBs back to GitHub; harmless (skipped) when no remote is configured. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
 
 </Project>
