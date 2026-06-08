@@ -11,8 +11,9 @@ scrape_configs:
     static_configs:
       # Replace these with the host:port of each application's /metrics endpoint.
       # host.docker.internal points back at the Docker host (apps running on IIS/Windows).
+      # 9184 is the KSC.Sample.SelfHost demo (samples/KSC.Sample.SelfHost).
       - targets:
-          - host.docker.internal:8080
+          - host.docker.internal:9184
         labels:
           team: platform
       # - targets: ['app-server-01:80', 'app-server-02:80']
