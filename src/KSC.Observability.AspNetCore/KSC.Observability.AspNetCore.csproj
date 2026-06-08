@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>KSC.Observability.AspNetCore</RootNamespace>
+    <AssemblyName>KSC.Observability.AspNetCore</AssemblyName>
+
+    <IsPackable>true</IsPackable>
+    <PackageId>KSC.Observability.AspNetCore</PackageId>
+    <Title>KSC.Observability for ASP.NET Core</Title>
+    <Description>Drop-in Prometheus metrics for ASP.NET Core (.NET 8+) applications. Adds a middleware that exposes a /metrics endpoint and tracks requests, active users and process resources. This is the package you install in your .NET 8 app.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\KSC.Observability.Abstractions\KSC.Observability.Abstractions.csproj" />
+    <ProjectReference Include="..\KSC.Observability.Metrics\KSC.Observability.Metrics.csproj" />
+  </ItemGroup>
+
+</Project>

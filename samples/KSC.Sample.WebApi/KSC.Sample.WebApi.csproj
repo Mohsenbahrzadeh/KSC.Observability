@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    Minimal ASP.NET Core (.NET 8) sample. Run with:  dotnet run  (using this project path)
+    Shows how a modern .NET app consumes KSC.Observability.AspNetCore.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>KSC.Sample.WebApi</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\KSC.Observability.AspNetCore\KSC.Observability.AspNetCore.csproj" />
+  </ItemGroup>
+
+</Project>
