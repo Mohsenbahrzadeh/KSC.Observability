@@ -1,6 +1,25 @@
 # Samples
 
-Two ways to see KSC.Observability running.
+Three ways to see KSC.Observability running.
+
+## KSC.Sample.WebApi — ASP.NET Core / .NET 8
+
+A minimal API showing the two-line setup for modern .NET. Run it:
+
+```bash
+dotnet run --project samples/KSC.Sample.WebApi
+# then open /metrics on the printed URL; hit /work a few times to move the histogram
+```
+
+Key bits (`Program.cs`):
+
+```csharp
+builder.Services.AddKscObservability(o => o.ServiceName = "sample-web-api");
+var app = builder.Build();
+app.UseKscObservability();   // request metrics + active users + /metrics
+```
+
+Options can also come from `appsettings.json` under the `KSC.Observability` section.
 
 ## KSC.Sample.SelfHost — runnable in one command (no IIS)
 

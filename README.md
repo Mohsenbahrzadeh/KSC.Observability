@@ -1,8 +1,13 @@
 # KSC.Observability
 
-Drop-in metrics & monitoring for **.NET Framework** applications (ASP.NET Web Forms / MVC),
-built on [Prometheus](https://prometheus.io/) and visualized with
-[Grafana](https://grafana.com/).
+Drop-in metrics & monitoring for both **.NET Framework** (ASP.NET Web Forms / MVC) **and
+.NET 8 / ASP.NET Core** applications, built on [Prometheus](https://prometheus.io/) and
+visualized with [Grafana](https://grafana.com/).
+
+| Your app | Install this package |
+|----------|----------------------|
+| .NET Framework (System.Web) | `KSC.Observability.AspNet` |
+| .NET 8 / ASP.NET Core | `KSC.Observability.AspNetCore` |
 
 Install one NuGet package into your app and you immediately get a `/metrics` endpoint exposing:
 
@@ -88,24 +93,50 @@ cd deploy && docker compose up -d      # Grafana: http://localhost:3000
 
 ## Installation
 
+> The packages are produced from this repo (`build/pack.ps1`) into `./artifacts`. Push them to
+> your internal NuGet feed (Azure Artifacts, BaGet, a file share, …) so your apps can install them.
+
+### .NET Framework (ASP.NET Web Forms / MVC)
+
 ```powershell
 Install-Package KSC.Observability.AspNet
 ```
 
-This single package transitively brings `KSC.Observability.Metrics`,
-`KSC.Observability.Abstractions`, `prometheus-net` and `Microsoft.Web.Infrastructure`.
-
-> The packages are produced from this repo (`build/pack.ps1`) into `./artifacts`. Push them to
-> your internal NuGet feed (Azure Artifacts, BaGet, a file share, …) so your apps can install them.
-
 That's all that's strictly required. The HttpModule **registers itself** via
-`[assembly: PreApplicationStartMethod]` — no `web.config` `<modules>` edit needed — and starts:
+`[assembly: PreApplicationStartMethod]` — no `web.config` `<modules>` edit needed — and starts
+timing requests, tracking active users (session / identity / ip) and serving `/metrics`.
 
-- timing every request and recording the in-flight gauge,
-- tracking active users (from session id / authenticated identity / client ip), and
-- serving the Prometheus exposition at `/metrics`.
+### .NET 8 / ASP.NET Core
 
-### Optional code configuration
+```powershell
+Install-Package KSC.Observability.AspNetCore
+```
+
+Two lines in `Program.cs`:
+
+```csharp
+builder.Services.AddKscObservability(o => o.ServiceName = "billing-api"); // options also bind
+                                                                          // from appsettings.json
+var app = builder.Build();
+app.UseKscObservability();   // request metrics + active users + /metrics
+```
+
+Configuration via `appsettings.json`:
+
+```json
+{
+  "KSC.Observability": {
+    "ServiceName": "billing-api",
+    "Environment": "production",
+    "TrackRequestPath": true
+  }
+}
+```
+
+Both packages transitively bring `KSC.Observability.Metrics`, `KSC.Observability.Abstractions`
+and `prometheus-net` (the .NET Framework package also brings `Microsoft.Web.Infrastructure`).
+
+### Optional code configuration (.NET Framework)
 
 ```csharp
 // Global.asax.cs
@@ -219,9 +250,12 @@ Prometheus. Grafana opens on the provisioned **KSC.Observability — Overview** 
 | Project | Layer | Target | Purpose |
 |---------|-------|--------|---------|
 | `KSC.Observability.Abstractions` | Core | netstandard2.0 | Contracts & options, no dependencies |
-| `KSC.Observability.Metrics` | Infrastructure | net472 | Prometheus-based collectors |
+| `KSC.Observability.Metrics` | Infrastructure | net472; net8.0 | Prometheus-based collectors (shared core) |
 | `KSC.Observability.AspNet` | Integration | net472 | `HttpModule`, `/metrics`, auto-registration |
+| `KSC.Observability.AspNetCore` | Integration | net8.0 | Middleware + DI + `/metrics` for ASP.NET Core |
 | `KSC.Sample.WebApp` | Sample | net472 | Reference ASP.NET app (Visual Studio) |
+| `KSC.Sample.WebApi` | Sample | net8.0 | Reference ASP.NET Core minimal API |
+| `KSC.Sample.SelfHost` | Sample | net472 | Console demo (no IIS) |
 | `KSC.Observability.Tests` | Tests | net472 | Unit tests |
 
 Dependency direction points inward: `AspNet → Metrics → Abstractions`. The integration layer is

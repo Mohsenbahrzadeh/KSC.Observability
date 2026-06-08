@@ -2,10 +2,15 @@
 
 # راهنمای آموزشی KSC.Observability
 
+> **نسخهٔ سند: 0.2.0** — متناظر با نسخهٔ پکیج‌ها (افزودن پشتیبانی .NET 8 / ASP.NET Core).
+
 > مانیتورینگ و متریک آمادهٔ نصب برای اپلیکیشن‌های **.NET Framework** (ASP.NET Web Forms / MVC)
-> بر پایهٔ **Prometheus** و **Grafana**.
+> **و .NET 8 / ASP.NET Core**، بر پایهٔ **Prometheus** و **Grafana**.
 
 این سند هم **توضیح می‌دهد چه چیزی ساخته شد و چرا**، و هم **گام‌به‌گام یاد می‌دهد چطور استفاده کنید**.
+
+> **کدام پکیج را نصب کنم؟** اپ‌های **.NET Framework** → `KSC.Observability.AspNet`؛
+> اپ‌های **.NET 8 / ASP.NET Core** → `KSC.Observability.AspNetCore`. هستهٔ متریک بین هر دو مشترک است.
 
 ---
 
@@ -94,11 +99,13 @@ ksc_active_users{service="billing",instance="SRV01",env="production"} 24
 KSC.Observability/
 ├── src/
 │   ├── KSC.Observability.Abstractions   ← لایهٔ Core: قراردادها و Options (بدون هیچ وابستگی)
-│   ├── KSC.Observability.Metrics        ← لایهٔ Infrastructure: پیاده‌سازی با prometheus-net
-│   └── KSC.Observability.AspNet         ← لایهٔ Integration: همان پکیجی که نصب می‌کنید
+│   ├── KSC.Observability.Metrics        ← لایهٔ Infrastructure: prometheus-net (net472 + net8.0)
+│   ├── KSC.Observability.AspNet         ← یکپارچه‌سازی .NET Framework (System.Web)
+│   └── KSC.Observability.AspNetCore     ← یکپارچه‌سازی .NET 8 (Middleware + DI)
 ├── samples/
 │   ├── KSC.Sample.SelfHost              ← دموی کنسولی (بدون IIS) برای تست سریع
-│   └── KSC.Sample.WebApp                ← نمونهٔ واقعی ASP.NET (برای Visual Studio)
+│   ├── KSC.Sample.WebApp                ← نمونهٔ ASP.NET Framework (Visual Studio)
+│   └── KSC.Sample.WebApi                ← نمونهٔ ASP.NET Core / .NET 8 (Minimal API)
 ├── tests/KSC.Observability.Tests        ← تست‌های واحد (xUnit)
 ├── deploy/                              ← Prometheus + Grafana (docker-compose) + داشبورد
 ├── build/pack.ps1                       ← ساخت پکیج‌های NuGet
@@ -109,12 +116,13 @@ KSC.Observability/
 | لایه | پروژه | Target | چرا؟ |
 |------|-------|--------|------|
 | Core | Abstractions | netstandard2.0 | فقط قرارداد و interface؛ به هیچ کتابخانه‌ای وابسته نیست تا قابل‌تعویض بماند |
-| Infrastructure | Metrics | net472 | پیاده‌سازی واقعی متریک‌ها با `prometheus-net` |
+| Infrastructure | Metrics | net472 + net8.0 | پیاده‌سازی واقعی متریک‌ها با `prometheus-net` (هستهٔ مشترک هر دو دنیا) |
 | Integration | AspNet | net472 | اتصال به System.Web (HttpModule، endpoint، ثبت خودکار) |
+| Integration | AspNetCore | net8.0 | اتصال به ASP.NET Core (Middleware، DI، endpoint) |
 
-**جهت وابستگی:** `AspNet → Metrics → Abstractions`. لایهٔ بیرونی (AspNet) همه را می‌شناسد؛ لایه‌های
-داخلی هیچ‌چیزِ بیرونی را نمی‌شناسند. نتیجه: اگر فردا خواستید به‌جای Prometheus از سیستم دیگری استفاده
-کنید، فقط لایهٔ Metrics را عوض می‌کنید و قراردادها (Abstractions) و کد اپ شما دست‌نخورده می‌ماند.
+**جهت وابستگی:** `AspNet / AspNetCore → Metrics → Abstractions`. لایهٔ بیرونی همه را می‌شناسد؛ لایه‌های
+داخلی هیچ‌چیزِ بیرونی را نمی‌شناسند. به همین خاطر **افزودن پشتیبانی .NET 8 فقط یک لایهٔ یکپارچه‌سازی
+جدید بود** و هستهٔ متریک دست‌نخورده ماند — این دقیقاً فایدهٔ Clean Architecture است.
 
 ---
 
@@ -216,6 +224,46 @@ protected void Application_Start(object sender, EventArgs e)
 ### گام ۴ — تست
 اپ را اجرا کنید و آدرس `/metrics` را باز کنید. باید خروجی متنی متریک‌ها را ببینید. تمام —
 از این لحظه اپ شما قابل‌مانیتور است.
+
+### ۶.۵ نصب در اپ‌های .NET 8 (ASP.NET Core)
+
+برای اپ‌های مدرن، چون `System.Web` وجود ندارد، از پکیج جداگانهٔ **`KSC.Observability.AspNetCore`**
+استفاده می‌کنید. هستهٔ متریک همان است؛ فقط نحوهٔ اتصال به پایپ‌لاین فرق دارد (Middleware + DI).
+
+```powershell
+Install-Package KSC.Observability.AspNetCore
+```
+
+سپس فقط **دو خط** در `Program.cs`:
+
+```csharp
+builder.Services.AddKscObservability(o => o.ServiceName = "billing-api");
+var app = builder.Build();
+app.UseKscObservability();   // متریک ریکوئست + کاربر فعال + endpoint /metrics
+```
+
+تنظیمات هم می‌تواند از `appsettings.json` بیاید (همان نام‌های Options زیر بخش `KSC.Observability`):
+
+```json
+{
+  "KSC.Observability": {
+    "ServiceName": "billing-api",
+    "Environment": "production",
+    "TrackRequestPath": true,
+    "ActiveUserWindow": "00:05:00"
+  }
+}
+```
+
+نکته‌ها:
+- اگر از Endpoint Routing استفاده می‌کنید، به‌جای اتکا به middleware می‌توانید
+  `app.MapKscMetrics();` را هم صدا بزنید.
+- لیبل `path` در Core از **route template** ساخته می‌شود (مثلاً `/orders/{id}`) که ذاتاً
+  cardinality پایینی دارد.
+- شمارش کاربر فعال از این ترتیب استفاده می‌کند: هویت احرازهویت‌شده → Session (اگر فعال باشد) → IP.
+
+> **خلاصه:** اپ Framework؟ `KSC.Observability.AspNet`. اپ .NET 8؟ `KSC.Observability.AspNetCore`.
+> بقیهٔ این راهنما (متریک‌ها، Prometheus، Grafana، PromQL) برای هر دو **یکسان** است.
 
 ---
 
@@ -660,6 +708,38 @@ app.CompleteRequest();
 ```
 به‌علاوه `KscObservability.Initialize(Action<ObservabilityOptions>?)` (façade) و
 `AppSettingsOptionsBinder` که کلیدهای `KSC.Observability:*` را از web.config می‌خواند.
+
+### مرحله ۴.۵ — لایهٔ Integration برای .NET 8 (AspNetCore)
+برای پشتیبانی از .NET 8، ابتدا `Metrics` را چندهدفه کنید تا روی هر دو دنیا قابل‌استفاده باشد:
+```xml
+<TargetFrameworks>net472;net8.0</TargetFrameworks>
+```
+سپس پروژهٔ `src/KSC.Observability.AspNetCore` با `TargetFramework=net8.0`،
+`<FrameworkReference Include="Microsoft.AspNetCore.App" />` و ارجاع به Abstractions و Metrics بسازید.
+سه فایل کلیدی:
+```csharp
+// AddKscObservability: ساخت runtime به‌عنوان singleton، با bind از بخش "KSC.Observability"
+services.AddSingleton<IObservabilityRuntime>(sp => {
+    var o = new ObservabilityOptions();
+    sp.GetService<IConfiguration>()?.GetSection("KSC.Observability").Bind(o);
+    configure?.Invoke(o);
+    return ObservabilityBootstrapper.Initialize(o);
+});
+
+// ObservabilityMiddleware.Invoke: اگر مسیر == MetricsPath → سرو متریک؛ وگرنه:
+if (opts.EnableActiveUserTracking) TouchUser(ctx);     // identity → session → ip
+runtime.Http.RequestStarted();
+var ts = Stopwatch.GetTimestamp();
+try { await _next(ctx); }
+finally {
+    var sec = Stopwatch.GetElapsedTime(ts).TotalSeconds;
+    string? path = opts.TrackRequestPath ? RouteOf(ctx) : null;   // از RouteEndpoint.RoutePattern
+    runtime.Http.RequestCompleted(ctx.Request.Method, path, ctx.Response.StatusCode, sec);
+}
+
+// UseKscObservability: GetRequiredService<IObservabilityRuntime>() (اجباری‌سازی ساخت) + UseMiddleware
+```
+استفادهٔ نهایی در `Program.cs`: `AddKscObservability(...)` و `app.UseKscObservability();`.
 
 ### مرحله ۵ — تست‌ها
 پروژه: `tests/KSC.Observability.Tests` (net472، xUnit). تست‌های کلیدی: اعتبارسنجی Options،
