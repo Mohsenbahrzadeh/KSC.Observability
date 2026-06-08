@@ -14,6 +14,9 @@ Install one NuGet package into your app and you immediately get a `/metrics` end
 
 Prometheus scrapes that endpoint; Grafana turns it into dashboards and alerts.
 
+> 📘 **راهنمای آموزشی کامل به فارسی:** [`docs/GUIDE.fa.md`](docs/GUIDE.fa.md) — مفاهیم، معماری،
+> نصب گام‌به‌گام، تنظیمات، Grafana، PromQL و عیب‌یابی.
+
 ```
 ┌─────────────────────┐   scrape /metrics    ┌────────────┐     ┌──────────┐
 │   Your ASP.NET app  │ ◀─────────────────── │ Prometheus │ ──▶ │ Grafana  │
