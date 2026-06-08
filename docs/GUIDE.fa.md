@@ -436,6 +436,313 @@ Pushgateway یا بک‌اند Push مثل InfluxDB استفاده کرد (تغ�
 
 ---
 
+## ۱۶. ضمیمه: بازتولید پروژه از صفر (برای تیم‌های دیگر)
+
+این بخش طوری نوشته شده که اگر **فقط همین داکیومنت** را در اختیار یک تیم دیگر بگذارید، بتوانند کل
+پروژه را از صفر بسازند. ترتیب کار دقیقاً همان ۱۰ مرحله‌ای است که پروژه ساخته شد.
+
+### ۱۶.۰ پیش‌نیازها
+- **.NET SDK** (نسخهٔ 8 یا 9). در `global.json` پین می‌شود.
+- **.NET Framework 4.7.2 Targeting Pack** (روی ویندوز؛ برای بیلد net472).
+- **Git** و یک مخزن خالی.
+- **Docker Desktop** (برای استک مانیتورینگ).
+- (اختیاری) **Visual Studio 2019/2022** برای اپ نمونهٔ Web Forms.
+
+### ۱۶.۱ ساختار نهایی که قرار است بسازیم
+```
+KSC.Observability/
+├── global.json, Directory.Build.props, NuGet.config, .gitignore, .gitattributes
+├── KSC.Observability.sln
+├── src/{Abstractions, Metrics, AspNet}
+├── tests/KSC.Observability.Tests
+├── samples/{KSC.Sample.SelfHost, KSC.Sample.WebApp}
+├── deploy/{docker-compose.yml, prometheus/, grafana/}
+├── build/pack.ps1 , up.ps1 , down.ps1 , up.cmd , down.cmd
+└── .github/workflows/ci.yml
+```
+
+### مرحله ۱ — اسکلت و فایل‌های پایه
+
+`global.json` (SDK را پین می‌کند تا بیلد پایدار بماند):
+```json
+{ "sdk": { "version": "9.0.314", "rollForward": "latestMinor", "allowPrerelease": false } }
+```
+
+`Directory.Build.props` (تنظیمات مشترک همهٔ پروژه‌ها + متادیتای پکیج):
+```xml
+<Project>
+  <PropertyGroup>
+    <Product>KSC.Observability</Product>
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageOutputPath>$(MSBuildThisFileDirectory)artifacts</PackageOutputPath>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(IsPackable)' == 'true'">
+    <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
+</Project>
+```
+
+سپس solution بسازید: `dotnet new sln -n KSC.Observability`.
+
+### مرحله ۲ — لایهٔ Core (Abstractions)
+پروژه: `src/KSC.Observability.Abstractions` با `TargetFramework=netstandard2.0` و `RootNamespace=KSC.Observability`.
+
+**`ObservabilityOptions.cs`** — تمام تنظیمات با مقدار پیش‌فرض:
+```csharp
+public sealed class ObservabilityOptions
+{
+    public string ServiceName { get; set; } = "dotnet-app";
+    public string InstanceId { get; set; } = System.Environment.MachineName;
+    public string Environment { get; set; } = "production";
+    public string MetricPrefix { get; set; } = "ksc";
+    public string MetricsPath { get; set; } = "/metrics";
+    public bool EnableSystemMetrics { get; set; } = true;
+    public bool EnableHttpMetrics { get; set; } = true;
+    public bool EnableActiveUserTracking { get; set; } = true;
+    public TimeSpan SystemMetricsInterval { get; set; } = TimeSpan.FromSeconds(5);
+    public TimeSpan ActiveUserWindow { get; set; } = TimeSpan.FromMinutes(5);
+    public bool TrackRequestPath { get; set; } = false;
+    public double[] RequestDurationSecondsBuckets { get; set; }
+        = { 0.005,0.01,0.025,0.05,0.1,0.25,0.5,1,2.5,5,10 };
+    public string? MetricsAccessToken { get; set; }
+    public void Validate() { /* بررسی خالی‌نبودن ServiceName، شروع MetricsPath با '/'، مثبت بودن بازه‌ها */ }
+}
+```
+
+**چهار interface کلیدی** (همگی در namespace `KSC.Observability`):
+```csharp
+public interface ISystemMetricsCollector : IDisposable { void Start(); void Stop(); }
+
+public interface IHttpMetricsRecorder {
+    void RequestStarted();
+    void RequestCompleted(string method, string? path, int statusCode, double elapsedSeconds);
+}
+
+public interface IActiveUserTracker : IDisposable { void Touch(string userKey); int CurrentCount { get; } }
+
+public interface IObservabilityRuntime : IDisposable {
+    ObservabilityOptions Options { get; }
+    IHttpMetricsRecorder Http { get; }
+    IActiveUserTracker Users { get; }
+    void WriteMetrics(System.IO.Stream output);
+}
+```
+
+**`ObservabilityHost.cs`** — یک نگه‌دارندهٔ سراسری (process-wide) برای runtime فعال:
+```csharp
+public static class ObservabilityHost
+{
+    static IObservabilityRuntime? _current; static readonly object Gate = new object();
+    public static bool IsInitialized => _current != null;
+    public static IObservabilityRuntime Current => _current ?? throw new InvalidOperationException("not initialized");
+    public static IObservabilityRuntime? TryGet() => _current;
+    public static void SetRuntime(IObservabilityRuntime rt) {
+        lock (Gate) { if (_current == null) _current = rt; else rt.Dispose(); } // اولین برنده است
+    }
+}
+```
+به‌علاوه ثابت‌های `LabelNames` (service, instance, env, method, code, path, generation) و
+`MetricSuffixes` (نام متریک‌ها بدون پیشوند).
+
+### مرحله ۳ — لایهٔ Infrastructure (Metrics)
+پروژه: `src/KSC.Observability.Metrics` با `TargetFramework=net472`، ارجاع به Abstractions و
+`PackageReference: prometheus-net 8.2.1`.
+
+**نکتهٔ کلیدی محاسبهٔ CPU** (در `PrometheusSystemMetricsCollector`): یک تایمر هر چند ثانیه نمونه می‌گیرد:
+```csharp
+_process.Refresh();
+var nowUtc = DateTime.UtcNow;
+var cpuNow = _process.TotalProcessorTime;
+var wall   = (nowUtc - _lastSampleUtc).TotalSeconds;
+if (wall > 0) {
+    var cpu = (cpuNow - _lastCpuTime).TotalSeconds;
+    var cores = Math.Max(1, Environment.ProcessorCount);
+    _cpu.Set(Math.Round(cpu / (wall * cores) * 100.0, 2));
+}
+_lastSampleUtc = nowUtc; _lastCpuTime = cpuNow;
+_workingSet.Set(_process.WorkingSet64);
+_managedMemory.Set(GC.GetTotalMemory(false));
+_threads.Set(_process.Threads.Count);
+_uptime.Set((nowUtc - _startedUtc).TotalSeconds);
+for (int g = 0; g <= GC.MaxGeneration; g++)
+    _gcCollections.WithLabels(g.ToString()).IncTo(GC.CollectionCount(g)); // Counter یکنواخت
+```
+گاج‌ها/شمارنده‌ها با `IMetricFactory` ساخته می‌شوند؛ نام = `prefix + "_" + suffix`.
+
+**`PrometheusHttpMetricsRecorder`** — سه متریک:
+```csharp
+_requestsTotal = factory.CreateCounter(name("http_requests_total"),
+    "...", new CounterConfiguration { LabelNames = new[]{ "method","code" } });   // + "path" اگر فعال
+_inFlight = factory.CreateGauge(name("http_requests_in_flight"), "...");
+_duration = factory.CreateHistogram(name("http_request_duration_seconds"), "...",
+    new HistogramConfiguration { Buckets = opts.RequestDurationSecondsBuckets, LabelNames = new[]{ "method" } });
+// RequestStarted: _inFlight.Inc();
+// RequestCompleted: _inFlight.Dec(); _requestsTotal.WithLabels(...).Inc(); _duration.WithLabels(method).Observe(sec);
+```
+
+**`PrometheusActiveUserTracker`** — منطق پنجرهٔ کشویی:
+```csharp
+ConcurrentDictionary<string,long> _lastSeen;       // userKey -> ticks
+public void Touch(string k){ if(!string.IsNullOrEmpty(k)) _lastSeen[k] = DateTime.UtcNow.Ticks; }
+public void Prune(){                                 // تایمر هر window/4 صدا می‌زند
+    var cutoff = DateTime.UtcNow.Ticks - _windowTicks;
+    foreach (var p in _lastSeen) if (p.Value < cutoff) _lastSeen.TryRemove(p.Key, out _);
+    _activeUsers.Set(_lastSeen.Count);
+}
+```
+
+**`PrometheusObservabilityRuntime`** — composition root:
+```csharp
+_registry = Metrics.NewCustomRegistry();                       // رجیستری ایزوله
+_registry.SetStaticLabels(new Dictionary<string,string>{        // لیبل‌های ثابت روی همهٔ متریک‌ها
+    ["service"]=opts.ServiceName, ["instance"]=opts.InstanceId, ["env"]=opts.Environment });
+var factory = Metrics.WithCustomRegistry(_registry);
+// build_info, Http, Users و در صورت فعال بودن SystemCollector ساخته و Start می‌شوند.
+public void WriteMetrics(Stream s) => _registry.CollectAndExportAsTextAsync(s).GetAwaiter().GetResult();
+```
+
+**`ObservabilityBootstrapper`** — مقداردهی idempotent:
+```csharp
+public static IObservabilityRuntime Initialize(ObservabilityOptions o){
+    var ex = ObservabilityHost.TryGet(); if (ex != null) return ex;
+    lock (Gate){ ex = ObservabilityHost.TryGet(); if (ex != null) return ex;
+        ObservabilityHost.SetRuntime(new PrometheusObservabilityRuntime(o)); return ObservabilityHost.Current; }
+}
+```
+
+### مرحله ۴ — لایهٔ Integration (AspNet)
+پروژه: `src/KSC.Observability.AspNet` با `net472`، ارجاع به Abstractions و Metrics،
+`PackageReference: Microsoft.Web.Infrastructure 2.0.0`، و `Reference: System.Web, System.Configuration`.
+
+**ثبت خودکار ماژول** — فایل `PreApplicationStart.cs`:
+```csharp
+[assembly: PreApplicationStartMethod(typeof(ObservabilityHttpModule),
+    nameof(ObservabilityHttpModule.OnPreApplicationStart))]
+```
+و در ماژول:
+```csharp
+public static void OnPreApplicationStart() =>
+    Microsoft.Web.Infrastructure.DynamicModuleHelper.DynamicModuleUtility
+        .RegisterModule(typeof(ObservabilityHttpModule));
+```
+
+**هستهٔ `ObservabilityHttpModule`**:
+```csharp
+public void Init(HttpApplication ctx){
+    KscObservability.EnsureInitialized();                 // اگر مقداردهی نشده، با web.config/پیش‌فرض
+    ctx.BeginRequest            += OnBeginRequest;
+    ctx.PostAcquireRequestState += OnPostAcquireRequestState; // اینجا Session در دسترس است
+    ctx.EndRequest              += OnEndRequest;
+}
+// OnBeginRequest: اگر مسیر == MetricsPath → ServeMetrics و CompleteRequest؛ وگرنه Http.RequestStarted + Stopwatch
+// OnPostAcquireRequestState: کلید کاربر (SessionID → نام کاربر → IP) را Users.Touch می‌کند
+// OnEndRequest: Stopwatch را می‌خواند و Http.RequestCompleted(method, path?, status, sec)
+```
+سرو متریک:
+```csharp
+response.ContentType = "text/plain; version=0.0.4; charset=utf-8";
+runtime.WriteMetrics(response.OutputStream);
+app.CompleteRequest();
+```
+به‌علاوه `KscObservability.Initialize(Action<ObservabilityOptions>?)` (façade) و
+`AppSettingsOptionsBinder` که کلیدهای `KSC.Observability:*` را از web.config می‌خواند.
+
+### مرحله ۵ — تست‌ها
+پروژه: `tests/KSC.Observability.Tests` (net472، xUnit). تست‌های کلیدی: اعتبارسنجی Options،
+شمارش/پاکسازی کاربران فعال، و خروجی exposition (شمارنده/گاج/هیستوگرام و لیبل‌های ثابت). اجرا با
+`dotnet test`.
+
+### مرحله ۶ — بسته‌بندی NuGet
+در سه پروژهٔ `src/*` مقادیر `IsPackable=true` و `PackageId` را ست کنید. چون پروژه‌ها به‌هم
+`ProjectReference` دارند و همگی packable‌اند، NuGet آن‌ها را به‌صورت **وابستگی پکیج** تبدیل می‌کند؛
+یعنی نصب `KSC.Observability.AspNet` بقیه را هم می‌آورد. تولید با `dotnet pack -c Release`.
+
+### مرحله ۷ — استقرار (Prometheus + Grafana)
+`deploy/docker-compose.yml`:
+```yaml
+services:
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    ports: ["9090:9090"]
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command: ["--config.file=/etc/prometheus/prometheus.yml","--storage.tsdb.retention.time=30d"]
+    extra_hosts: ["host.docker.internal:host-gateway"]
+  grafana:
+    image: grafana/grafana:11.2.0
+    ports: ["3000:3000"]
+    environment: { GF_SECURITY_ADMIN_USER: admin, GF_SECURITY_ADMIN_PASSWORD: admin }
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    depends_on: [prometheus]
+volumes: { prometheus-data: {}, grafana-data: {} }
+```
+`deploy/prometheus/prometheus.yml` (هدف = اپ‌های شما)، و در
+`deploy/grafana/provisioning/` دو فایل: datasource (به `http://prometheus:9090` با `uid: PROMETHEUS`)
+و dashboard provider (مسیر `/var/lib/grafana/dashboards`). داشبورد را به‌صورت یک فایل JSON در
+`deploy/grafana/dashboards/ksc-overview.json` بسازید (پنل‌ها: کاربران فعال، in-flight، نرخ ریکوئست/خطا،
+p50/p95/p99، CPU، حافظه، thread/handle، GC؛ با متغیر `service`). ساده‌ترین راه: داشبورد را در Grafana
+طراحی و سپس **Export → Save to file** کنید.
+
+### مرحله ۸ — CI (GitHub Actions)
+`.github/workflows/ci.yml` روی `windows-latest` (به‌خاطر net472): `setup-dotnet` با
+`global-json-file: global.json`، سپس `restore` → `build -c Release` → `test` → `pack` و آپلود
+artifactها.
+
+### مرحله ۹ — نمونه‌ها
+- `samples/KSC.Sample.SelfHost`: کنسول net472 که با `TcpListener` روی `0.0.0.0:9184` یک سرور
+  HTTP کوچک می‌سازد و `runtime.WriteMetrics` را روی `/metrics` سرو می‌کند و خودش ترافیک تولید می‌کند.
+  **نکتهٔ مهم:** قبل از بستن سوکت، کل هدرهای درخواست را بخوانید (drain) تا ویندوز به‌جای FIN یک RST
+  نفرستد و Prometheus خطای *unexpected EOF* نگیرد.
+- `samples/KSC.Sample.WebApp`: اپ کلاسیک ASP.NET Web Forms که پکیج را با `PackageReference` نصب
+  می‌کند (دقیقاً مثل مصرف واقعی).
+
+### مرحله ۱۰ — اسکریپت یک‌دستوری
+`up.ps1` (+ wrapper `up.cmd`): بررسی Docker → build دمو → `docker compose up -d` → اجرای اپ به‌صورت
+پراسس detached → انتظار تا سلامت → باز کردن مرورگر. `down.ps1` معکوسش را انجام می‌دهد. نکته: hostِ
+۶۴-بیتی dotnet را ترجیح دهید (`$env:ProgramFiles\dotnet\dotnet.exe`) تا با نسخهٔ x86 احتمالی تداخل نکند.
+
+### نقشهٔ کامیت مرحله‌ای (استاندارد، Conventional Commits)
+پروژه دقیقاً با این ترتیب کامیت شد — همین الگو را دنبال کنید:
+```
+1.  chore: scaffold solution structure and core abstractions
+2.  feat(metrics): add Prometheus-based collectors and composition root
+3.  feat(aspnet): add System.Web integration with auto-registered HttpModule
+4.  test: add unit tests for options, active users and exposition
+5.  build(nuget): enable packaging with symbols, readme and Source Link
+6.  feat(deploy): add Prometheus + Grafana stack with provisioned dashboard
+7.  feat(sample): add ASP.NET Web Forms sample and local NuGet feed
+8.  ci: add GitHub Actions build/test/pack workflow
+9.  docs: write full usage guide, metrics reference and changelog
+10. feat: one-command launcher for the demo environment
+```
+
+### چک‌لیست تأیید (وقتی تمام شد)
+- [ ] `dotnet build KSC.Observability.sln -c Release` بدون خطا.
+- [ ] `dotnet test` همهٔ تست‌ها سبز.
+- [ ] `dotnet pack -c Release` سه فایل `.nupkg` در `artifacts` می‌سازد.
+- [ ] `.\up.cmd` همه‌چیز را بالا می‌آورد و در `http://localhost:9090/targets` هدف `up` است.
+- [ ] در Grafana، داشبورد با داده پر می‌شود.
+
+---
+
 ## جمع‌بندی
 
 | می‌خواهید… | این کار را بکنید |

@@ -14,8 +14,11 @@ Install one NuGet package into your app and you immediately get a `/metrics` end
 
 Prometheus scrapes that endpoint; Grafana turns it into dashboards and alerts.
 
-> 📘 **راهنمای آموزشی کامل به فارسی:** [`docs/GUIDE.fa.md`](docs/GUIDE.fa.md) — مفاهیم، معماری،
-> نصب گام‌به‌گام، تنظیمات، Grafana، PromQL و عیب‌یابی.
+> 📘 **راهنمای آموزشی کامل به فارسی:** [`docs/GUIDE.fa.md`](docs/GUIDE.fa.md)
+> ([نسخهٔ PDF](docs/KSC.Observability-Guide.fa.pdf)) — مفاهیم، معماری، نصب گام‌به‌گام، تنظیمات،
+> Grafana، PromQL، عیب‌یابی و **راهنمای بازتولید پروژه از صفر** برای تیم‌های دیگر.
+>
+> برای ساخت دوبارهٔ PDF: `python build/make-pdf.py docs/GUIDE.fa.md docs/KSC.Observability-Guide.fa.pdf`
 
 ```
 ┌─────────────────────┐   scrape /metrics    ┌────────────┐     ┌──────────┐
