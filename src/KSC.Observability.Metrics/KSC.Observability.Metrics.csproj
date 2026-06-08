@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <RootNamespace>KSC.Observability.Metrics</RootNamespace>
+    <AssemblyName>KSC.Observability.Metrics</AssemblyName>
+
+    <IsPackable>true</IsPackable>
+    <PackageId>KSC.Observability.Metrics</PackageId>
+    <Title>KSC.Observability Metrics</Title>
+    <Description>Prometheus-based metric collectors (system, HTTP, active users) for KSC.Observability. Reference an integration package such as KSC.Observability.AspNet instead of this one directly.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\KSC.Observability.Abstractions\KSC.Observability.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="prometheus-net" Version="8.2.1" />
+  </ItemGroup>
+
+</Project>
