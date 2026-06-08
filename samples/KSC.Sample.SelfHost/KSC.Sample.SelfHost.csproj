@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    A self-hosted demo (no IIS or Visual Studio needed). Run it with:
+        dotnet run  (using the project path)
+    It exposes /metrics on http://localhost:9184 and generates synthetic traffic so the
+    metrics actually move. Kept out of KSC.Observability.sln to keep the library build focused.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net472</TargetFramework>
+    <RootNamespace>KSC.Sample.SelfHost</RootNamespace>
+    <AssemblyName>KSC.Sample.SelfHost</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Self-hosting only needs the metrics backend (which brings in Abstractions). -->
+    <ProjectReference Include="..\..\src\KSC.Observability.Metrics\KSC.Observability.Metrics.csproj" />
+  </ItemGroup>
+
+</Project>

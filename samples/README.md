@@ -1,4 +1,39 @@
-# Sample: KSC.Sample.WebApp
+# Samples
+
+Two ways to see KSC.Observability running.
+
+## KSC.Sample.SelfHost — runnable in one command (no IIS)
+
+A console app that hosts `/metrics` on an `HttpListener` and generates synthetic traffic, so the
+metrics actually move. Great for trying Prometheus/Grafana without setting up IIS.
+
+```bash
+dotnet run --project samples/KSC.Sample.SelfHost
+# then open http://localhost:9184/metrics
+```
+
+You'll see live values such as:
+
+```
+ksc_active_users{service="selfhost-demo",...} 24
+ksc_http_requests_in_flight{...} 1
+ksc_http_requests_total{method="GET",code="200",path="/api/orders",...} 304
+ksc_http_request_duration_seconds_bucket{method="GET",le="0.05",...} 827
+ksc_process_working_set_bytes{...} 36814848
+ksc_process_uptime_seconds{...} 144.3
+```
+
+To let the Docker Prometheus scrape it, run as Administrator with a wildcard binding and point
+`deploy/prometheus/prometheus.yml` at `host.docker.internal:9184`:
+
+```powershell
+# elevated PowerShell
+dotnet run --project samples/KSC.Sample.SelfHost -- "http://+:9184/"
+```
+
+---
+
+## KSC.Sample.WebApp — realistic ASP.NET integration
 
 A minimal classic **ASP.NET Web Forms** application (net472) showing how a real app consumes
 `KSC.Observability.AspNet`.
