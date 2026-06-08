@@ -1,0 +1,51 @@
+# Build results
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+build/output/
+artifacts/
+*.dll
+*.pdb
+!deploy/**/*.dll
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+!**/packages.config
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.cache
+
+# Rider / VS Code
+.idea/
+.vscode/
+
+# Test results
+[Tt]est[Rr]esults/
+*.trx
+coverage*.json
+coverage*.xml
+*.coverage
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Logs
+*.log
+
+# Claude Code local settings
+.claude/settings.local.json
+.claude/*.local.json

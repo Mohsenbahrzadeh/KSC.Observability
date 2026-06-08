@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>KSC.Observability</RootNamespace>
+    <AssemblyName>KSC.Observability.Abstractions</AssemblyName>
+
+    <IsPackable>true</IsPackable>
+    <PackageId>KSC.Observability.Abstractions</PackageId>
+    <Title>KSC.Observability Abstractions</Title>
+    <Description>Framework-agnostic contracts and configuration options for KSC.Observability. Reference the integration package (e.g. KSC.Observability.AspNet) instead of this one directly.</Description>
+  </PropertyGroup>
+
+</Project>
