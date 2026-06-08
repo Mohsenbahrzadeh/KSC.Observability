@@ -21,5 +21,5 @@ All notable changes to this project are documented here. The format is based on
 - Sample ASP.NET Web Forms app under `samples/`.
 - GitHub Actions CI (build, test, pack) on Windows.
 
-[Unreleased]: https://github.com/KSC/KSC.Observability/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/KSC/KSC.Observability/releases/tag/v0.1.0
+[Unreleased]: https://github.com/Mohsenbahrzadeh/KSC.Observability/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/Mohsenbahrzadeh/KSC.Observability/releases/tag/v0.1.0

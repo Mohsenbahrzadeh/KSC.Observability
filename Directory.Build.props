@@ -26,8 +26,8 @@
   <PropertyGroup>
     <IsPackable>false</IsPackable>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/KSC/KSC.Observability</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/KSC/KSC.Observability</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/Mohsenbahrzadeh/KSC.Observability</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Mohsenbahrzadeh/KSC.Observability</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>observability;metrics;prometheus;monitoring;dotnet-framework;aspnet</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
