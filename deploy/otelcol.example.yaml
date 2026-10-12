@@ -1,0 +1,26 @@
+# نمونه‌ی کانفیگ OpenTelemetry Collector برای داشبورد Observability پنل KSC.Authorization
+# متریک → Prometheus (scrape از :8889)   لاگ → Loki   تریس → Tempo
+receivers:
+  otlp:
+    protocols:
+      grpc: { endpoint: 0.0.0.0:4317 }
+      http: { endpoint: 0.0.0.0:4318 }
+
+processors:
+  batch: {}
+
+exporters:
+  prometheus:
+    endpoint: 0.0.0.0:8889          # در prometheus.yml یک scrape_config به این پورت اضافه کنید
+    resource_to_telemetry_conversion: { enabled: true }   # service_name, deployment_environment به لیبل تبدیل شوند
+  otlphttp/loki:
+    endpoint: http://localhost:3100/otlp       # Loki >= 3
+  otlp/tempo:
+    endpoint: localhost:4317                    # پورت OTLP خودِ Tempo (در صورت تداخل، تغییر دهید)
+    tls: { insecure: true }
+
+service:
+  pipelines:
+    metrics: { receivers: [otlp], processors: [batch], exporters: [prometheus] }
+    logs:    { receivers: [otlp], processors: [batch], exporters: [otlphttp/loki] }
+    traces:  { receivers: [otlp], processors: [batch], exporters: [otlp/tempo] }
