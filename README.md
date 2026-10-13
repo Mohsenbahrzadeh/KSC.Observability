@@ -100,6 +100,7 @@ Orders.Add(1, new KeyValuePair<string, object?>("channel", "web"));
 
 ## ۵) زیرساخت
 
+- `deploy/docker-compose.yml` — استک کامل برای توسعه/تست (`docker compose -f deploy/docker-compose.yml up -d`: Collector + Prometheus + Loki + Tempo).
 - `deploy/otelcol.example.yaml` — Collector (متریک→Prometheus، لاگ→Loki، تریس→Tempo). گزینه‌ی `resource_to_telemetry_conversion` الزامی است تا `service_instance_id` و `service_version` لیبل شوند.
 - `deploy/alerts.rules.yml` — قوانین هشدار (خطا، تأخیر، قطع داده، restart، وابستگی خراب، SQL کند). پنل هشدارهای فعال را در بنر سلامت نشان می‌دهد.
 
@@ -110,7 +111,19 @@ Orders.Add(1, new KeyValuePair<string, object?>("channel", "web"));
 - مسیرهای `/health` و `/ksc/observability` از تریس حذف می‌شوند.
 - نرخ نمونه‌برداری تریس را در ترافیک سنگین پایین بیاورید (`TraceSampleRatio`).
 
-## ۷) عیب‌یابی
+## ۷) نام متریک‌ها در Prometheus (تأییدشده با استک واقعی)
+
+لیبل `job` = `service.name` (ClientId). نام‌ها: `http_server_request_duration_seconds_*` (لیبل‌های `http_route`, `http_response_status_code`)،
+`http_client_request_duration_seconds_*` (`server_address`)، `db_client_operation_duration_seconds_*` (`db_namespace`, `db_system_name=microsoft.sql_server`)،
+`process_runtime_dotnet_*` (Runtime روی .NET 8؛ روی .NET 9+ نام‌ها `dotnet_*` است و پنل هر دو را می‌خواند)، `process_memory_usage_bytes`، `process_cpu_time_seconds_total`،
+`ksc_app_start_time_seconds`, `ksc_dependency_up`, `ksc_dependency_check_duration_seconds_*`, `ksc_http_unhandled_exceptions_total`.
+
+نکات:
+- در `prometheus.yml` برای scrape کردن Collector حتماً `honor_labels: true` بگذارید (`deploy/prometheus.stack.yml`).
+- متریک HTTP-clientِ خودِ exporter با فیلتر `filter/drop_otlp_self` در Collector حذف می‌شود تا Collector به‌عنوان «وابستگی» اپ دیده نشود.
+- پس از تغییر نسخه‌ی کتابخانه، سری‌های قدیمی (با مرز باکت متفاوت) تا چند دقیقه در `rate()` کنار سری جدید می‌مانند.
+
+## ۸) عیب‌یابی
 
 | علامت | علت محتمل |
 |---|---|

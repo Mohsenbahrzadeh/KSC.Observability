@@ -8,6 +8,13 @@ receivers:
 
 processors:
   batch: {}
+  # متریک HTTP-clientِ خودِ exporter (ارسال OTLP) جزو وابستگی‌های اپ حساب نشود
+  filter/drop_otlp_self:
+    error_mode: ignore
+    metrics:
+      datapoint:
+        - 'metric.name == "http.client.request.duration" and (attributes["server.port"] == 4317 or attributes["server.port"] == 4318)'
+
 
 exporters:
   prometheus:
@@ -21,6 +28,6 @@ exporters:
 
 service:
   pipelines:
-    metrics: { receivers: [otlp], processors: [batch], exporters: [prometheus] }
+    metrics: { receivers: [otlp], processors: [filter/drop_otlp_self, batch], exporters: [prometheus] }
     logs:    { receivers: [otlp], processors: [batch], exporters: [otlphttp/loki] }
     traces:  { receivers: [otlp], processors: [batch], exporters: [otlp/tempo] }

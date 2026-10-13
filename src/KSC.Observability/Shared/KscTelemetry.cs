@@ -30,8 +30,13 @@ namespace KSC.Observability
             Meter.CreateCounter<long>("ksc.http.unhandled_exceptions", "{exception}", "Unhandled exceptions by type and route");
 
         // ─── سلامت وابستگی‌ها ───────────────────────────────────────────────
+        internal const string DependencyDurationName = "ksc.dependency.check.duration";
+
+        /// <summary>مرزهای باکت برای هیستوگرام‌های ثانیه‌ای (همان مقادیر http.server.request.duration).</summary>
+        internal static readonly double[] SecondsBuckets = { 0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10 };
+
         internal static readonly Histogram<double> DependencyDuration =
-            Meter.CreateHistogram<double>("ksc.dependency.check.duration", "s", "Duration of dependency health probe");
+            Meter.CreateHistogram<double>(DependencyDurationName, "s", "Duration of dependency health probe");
 
         internal static readonly Counter<long> DependencyFailures =
             Meter.CreateCounter<long>("ksc.dependency.check.failures", "{check}", "Failed dependency health probes");

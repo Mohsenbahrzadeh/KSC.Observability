@@ -73,6 +73,7 @@ namespace KSC.Observability
                         .AddProcessInstrumentation()
                         .AddMeter(KscTelemetry.MeterName, KscTelemetry.BusinessMeterName);
                     if (o.EnableSqlInstrumentation) mb.AddSqlClientInstrumentation();
+                    mb.AddView(KscTelemetry.DependencyDurationName, new ExplicitBucketHistogramConfiguration { Boundaries = KscTelemetry.SecondsBuckets });
                     foreach (var m in o.AdditionalMeters) mb.AddMeter(m);
                     mb.AddOtlpExporter((e, reader) =>
                     {

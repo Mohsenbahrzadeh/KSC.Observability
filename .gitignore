@@ -22,3 +22,7 @@
 .vs/ProjectEvaluation/ksc.observability.metadata.v9.bin
 .vs/ProjectEvaluation/ksc.observability.projects.v9.bin
 .vs/ProjectEvaluation/ksc.observability.strings.v9.bin
+
+# build output
+**/bin/
+**/obj/

@@ -1,0 +1,30 @@
+receivers:
+  otlp:
+    protocols:
+      grpc: { endpoint: 0.0.0.0:4317 }
+      http: { endpoint: 0.0.0.0:4318 }
+
+processors:
+  batch: {}
+  # متریک HTTP-clientِ خودِ exporter (ارسال OTLP) جزو وابستگی‌های اپ حساب نشود
+  filter/drop_otlp_self:
+    error_mode: ignore
+    metrics:
+      datapoint:
+        - 'metric.name == "http.client.request.duration" and (attributes["server.port"] == 4317 or attributes["server.port"] == 4318)'
+
+exporters:
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    resource_to_telemetry_conversion: { enabled: true }
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls: { insecure: true }
+
+service:
+  pipelines:
+    metrics: { receivers: [otlp], processors: [filter/drop_otlp_self, batch], exporters: [prometheus] }
+    logs:    { receivers: [otlp], processors: [batch], exporters: [otlphttp/loki] }
+    traces:  { receivers: [otlp], processors: [batch], exporters: [otlp/tempo] }

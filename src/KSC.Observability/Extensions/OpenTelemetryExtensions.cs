@@ -87,6 +87,8 @@ public static class OpenTelemetryExtensions
                  .AddHttpClientInstrumentation()    // http.client.*
                  .AddMeter(ActiveUsersMeter.Name, KscTelemetry.MeterName, KscTelemetry.BusinessMeterName);
                 if (options.EnableSqlInstrumentation) m.AddSqlClientInstrumentation(); // db.client.*
+                // مرزهای پیش‌فرض هیستوگرام برای میلی‌ثانیه است؛ این متریک به ثانیه ثبت می‌شود
+                m.AddView(KscTelemetry.DependencyDurationName, new ExplicitBucketHistogramConfiguration { Boundaries = KscTelemetry.SecondsBuckets });
                 foreach (var meter in options.AdditionalMeters) m.AddMeter(meter);
                 m.AddOtlpExporter((o, reader) =>
                 {

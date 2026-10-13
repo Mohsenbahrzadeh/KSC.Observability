@@ -1,0 +1,29 @@
+# استک کامل Observability برای توسعه/تست (OTel Collector + Prometheus + Loki + Tempo).
+# اجرا:  docker compose -f deploy/docker-compose.yml up -d
+# اپ‌ها را به http://localhost:4317 (OTLP/gRPC) وصل کنید؛ در پنل KSC.Authorization:
+#   Observability:PrometheusUrl = http://localhost:9090
+#   Observability:LokiUrl       = http://localhost:3100
+#   Observability:TempoUrl      = http://localhost:3200
+services:
+  otelcol:
+    image: otel/opentelemetry-collector-contrib:0.116.1
+    volumes: [ "./otelcol.stack.yaml:/etc/otelcol-contrib/config.yaml:ro" ]
+    ports: [ "4317:4317", "4318:4318" ]
+    depends_on: [ loki, tempo ]
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    volumes:
+      - ./prometheus.stack.yml:/etc/prometheus/prometheus.yml:ro
+      - ./alerts.rules.yml:/etc/prometheus/alerts.rules.yml:ro
+    ports: [ "9090:9090" ]
+
+  loki:
+    image: grafana/loki:3.4.2
+    ports: [ "3100:3100" ]
+
+  tempo:
+    image: grafana/tempo:2.7.1
+    command: [ "--config.file=/etc/tempo.yaml" ]
+    volumes: [ "./tempo.stack.yaml:/etc/tempo.yaml:ro" ]
+    ports: [ "3200:3200" ]
