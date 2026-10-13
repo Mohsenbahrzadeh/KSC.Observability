@@ -1,0 +1,68 @@
+# قوانین هشدار Prometheus برای اپ‌هایی که با KSC.Observability پایش می‌شوند.
+# label «job» همان service.name (= ClientId اپ) است؛ پنل KSC.Authorization هشدارهای firing/pending را
+# از /api/v1/alerts می‌خواند و در بنر سلامت اپ نشان می‌دهد.
+#
+# prometheus.yml:
+#   rule_files: [ "alerts.rules.yml" ]
+groups:
+  - name: ksc-observability
+    rules:
+      - alert: HighErrorRate
+        expr: |
+          100 * sum by (job) (rate(http_server_request_duration_seconds_count{http_response_status_code=~"5.."}[5m]))
+              / sum by (job) (rate(http_server_request_duration_seconds_count[5m])) > 5
+        for: 5m
+        labels: { severity: critical }
+        annotations:
+          summary: "نرخ خطای 5xx بیش از ۵٪ است"
+
+      - alert: ElevatedErrorRate
+        expr: |
+          100 * sum by (job) (rate(http_server_request_duration_seconds_count{http_response_status_code=~"5.."}[5m]))
+              / sum by (job) (rate(http_server_request_duration_seconds_count[5m])) > 1
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "نرخ خطای 5xx بیش از ۱٪ است"
+
+      - alert: HighLatencyP95
+        expr: |
+          histogram_quantile(0.95, sum by (job, le) (rate(http_server_request_duration_seconds_bucket[5m]))) > 1
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "تأخیر p95 بالای ۱ ثانیه است"
+
+      - alert: ServiceNotReporting
+        expr: time() - max by (job) (timestamp(ksc_app_start_time_seconds)) > 300
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: "بیش از ۵ دقیقه است داده‌ای از اپ نمی‌رسد (اپ متوقف شده یا ارسال قطع است)"
+
+      - alert: ServiceRestarted
+        expr: changes(ksc_app_start_time_seconds[15m]) > 0
+        labels: { severity: warning }
+        annotations:
+          summary: "اپ در ۱۵ دقیقه‌ی اخیر restart شده است"
+
+      - alert: DependencyDown
+        expr: min by (job, dependency) (ksc_dependency_up) == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: "وابستگی {{ $labels.dependency }} در دسترس نیست"
+
+      - alert: SlowSqlQueries
+        expr: |
+          histogram_quantile(0.95, sum by (job, le) (rate(db_client_operation_duration_seconds_bucket[5m]))) > 1
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "تأخیر p95 کوئری‌های SQL بالای ۱ ثانیه است"
+
+      - alert: UnhandledExceptionsSpike
+        expr: sum by (job) (increase(ksc_http_unhandled_exceptions_total[5m])) > 10
+        labels: { severity: warning }
+        annotations:
+          summary: "بیش از ۱۰ خطای مدیریت‌نشده در ۵ دقیقه"

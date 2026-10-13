@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <RootNamespace>KSC.Observability</RootNamespace>
+    <Version>1.2.0</Version>
+    <PackageId>KSC.Observability.AspNet</PackageId>
+    <Description>Observability (metrics, traces, SQL and dependency health via OpenTelemetry/OTLP) for legacy KSC ASP.NET (.NET Framework 4.8) MVC / Web API / Web Forms applications.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\KSC.Observability\Shared\*.cs" Link="Shared\%(Filename)%(Extension)" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Configuration" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.Infrastructure" Version="2.0.1" />
+    <PackageReference Include="OpenTelemetry" Version="1.19.1" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.19.1" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNet" Version="1.19.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNet.TelemetryHttpModule" Version="1.19.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.19.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.SqlClient" Version="1.19.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.19.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Process" Version="1.19.0-rc.1" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.9.1" />
+  </ItemGroup>
+
+</Project>
